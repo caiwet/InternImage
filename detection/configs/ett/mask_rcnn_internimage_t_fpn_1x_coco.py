@@ -4,7 +4,7 @@
 # Licensed under The MIT License [see LICENSE for details]
 # --------------------------------------------------------
 
-
+import wandb
 _base_ = [
     '../_base_/models/cascade_rcnn_r50_fpn.py',
     '../_base_/datasets/ett.py',
@@ -37,18 +37,24 @@ model = dict(
 # By default, models are trained on 8 GPUs with 2 images per GPU
 data = dict(samples_per_gpu=2)
 optimizer = dict(
-    _delete_=True, type='AdamW', weight_decay=0.05,
-    lr=0.0001,
+    _delete_=True, type='AdamW', weight_decay=0.01,
+    lr=0.000078,
     constructor='CustomLayerDecayOptimizerConstructor',
     # auto_scale_lr = dict(enable=True, base_batch_size=16),
     paramwise_cfg=dict(num_layers=30, layer_decay_rate=1.0,
                        depths=[4, 4, 18, 4]))
 optimizer_config = dict(grad_clip=None)
 # fp16 = dict(loss_scale=dict(init_scale=512))
-evaluation = dict(save_best='auto')
+max_epochs=50
+num_last_epochs=3
+evaluation = dict(save_best='auto',
+                  interval=1,
+                  dynamic_intervals=[(max_epochs - num_last_epochs, 1)],
+                  )
 checkpoint_config = dict(
     interval=1,
     max_keep_ckpts=3,
     save_last=True,
 )
+runner = dict(type='EpochBasedRunner', max_epochs=max_epochs)
 

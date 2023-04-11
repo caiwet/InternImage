@@ -1,6 +1,8 @@
 # dataset settings
 dataset_type = 'ETTDataset'
+# classes = ('carina', 'tip', 'left clavicle', 'right clavicle')
 classes = ('carina', 'tip', 'clavicles')
+
 data_root = '/home/ec2-user/segmenter/MAIDA/data1000/downsized/split/'
 # data_root = '/home/ec2-user/segmenter/MAIDA/MIMIC_ETT_annotations/'
 img_norm_cfg = dict(
@@ -44,16 +46,16 @@ data = dict(
     val=dict(
         type=dataset_type,
         classes=classes,
-        ann_file=data_root + '../../train_annotations.json',
-        img_prefix=data_root + 'images/train',
+        ann_file=data_root + '../../val_annotations.json',
+        img_prefix=data_root + 'images/val',
         # ann_file=data_root + 'annotations_enlarged_10.json',
         # img_prefix=data_root + 'enlarged10_1280/images/train',
         pipeline=test_pipeline),
     test=dict(
         type=dataset_type,
         classes=classes,
-        ann_file=data_root + '../../train_annotations.json',
-        img_prefix=data_root + 'images/train',
+        ann_file=data_root + '../../test_annotations.json',
+        img_prefix=data_root + 'images/test',
         # ann_file=data_root + 'annotations_enlarged_10.json',
         # img_prefix=data_root + 'enlarged10_1280/images/train',
         pipeline=test_pipeline))

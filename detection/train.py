@@ -15,8 +15,9 @@ import mmcv
 import torch
 import torch.distributed as dist
 from mmcv import Config, DictAction
-from mmcv.runner import get_dist_info, init_dist
+from mmcv.runner import get_dist_info, init_dist, load_checkpoint
 from mmcv.utils import get_git_hash
+
 
 from mmdet import __version__
 from mmdet.apis import init_random_seed, set_random_seed, train_detector
@@ -28,10 +29,13 @@ from mmdet.utils import (collect_env, get_device, get_root_logger,
 import mmcv_custom  # noqa: F401,F403
 import mmdet_custom  # noqa: F401,F403
 
+import wandb
+wandb.login()
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Train a detector')
     parser.add_argument('config', help='train config file path')
+    parser.add_argument('--checkpoint', help='checkpoint file')
     parser.add_argument('--work-dir', help='the dir to save logs and models')
     parser.add_argument('--resume-from',
                         help='the checkpoint file to resume from')
@@ -111,13 +115,18 @@ def parse_args():
 def main():
     args = parse_args()
 
-    cfg = Config.fromfile(args.config)
+    default_cfg = Config.fromfile(args.config)
+
 
     # replace the ${key} with the value of cfg.key
-    cfg = replace_cfg_vals(cfg)
+    default_cfg = replace_cfg_vals(default_cfg)
 
     # update data root according to MMDET_DATASETS
-    update_data_root(cfg)
+    update_data_root(default_cfg)
+
+    wandb.init()
+    # cfg = wandb.config
+    cfg = default_cfg
 
     if args.cfg_options is not None:
         cfg.merge_from_dict(args.cfg_options)
@@ -211,6 +220,15 @@ def main():
     cfg.seed = seed
     meta['seed'] = seed
     meta['exp_name'] = osp.basename(args.config)
+    # breakpoint()
+
+    # Sweep - hyperparameter tuning
+    # cfg.optimizer.lr = wandb.config.lr
+    # cfg.optimizer.weight_decay = wandb.config.weight_decay
+    # cfg.runner.max_epochs = wandb.config.max_epochs
+
+    # wandb.log({"lr": wandb.config.lr, "weight_decay": wandb.config.weight_decay,
+    #            "max_epochs": wandb.config.max_epochs})
 
     model = build_detector(cfg.model,
                            train_cfg=cfg.get('train_cfg'),
@@ -234,14 +252,44 @@ def main():
     torch.backends.cuda.matmul.allow_tf32 = True
     torch.backends.cudnn.allow_tf32 = True
 
+    cfg.log_config.hooks = [
+    dict(type='TextLoggerHook'),
+    dict(type='MMDetWandbHook',
+         init_kwargs={'project': 'InternImage'},
+         interval=1,
+         log_checkpoint=True,
+         log_checkpoint_metadata=True
+        )]
+
     train_detector(model,
                    datasets,
                    cfg,
                    distributed=distributed,
                    validate=(not args.no_validate),
                    timestamp=timestamp,
-                   meta=meta)
-
+                   meta=meta,
+    )
 
 if __name__ == '__main__':
+    sweep_config = {
+        'method': 'random',
+        'metric': {
+            'name': 'bbox',
+            'goal': 'maximize',
+        },
+        'parameters': {
+            'lr': {
+                'min': 0.000001,
+                'max': 0.0001
+            },
+            'weight_decay': {
+                'values': [0.05, 0.01]
+            },
+            'max_epochs': {
+                'values': [12, 20, 50]
+            }
+        }
+    }
+    # sweep_id = wandb.sweep(sweep=sweep_config, project='my-first-sweep')
+    # wandb.agent(sweep_id, function=main, count=4)
     main()

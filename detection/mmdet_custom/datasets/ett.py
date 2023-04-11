@@ -21,6 +21,7 @@ from mmdet.datasets.builder import DATASETS
 class ETTDataset(CustomDataset):
 
     CLASSES = ('carina', 'tip', 'clavicle')
+    # CLASSES = ('carina', 'tip', 'left clavicle', 'right clavicle')
 
     def load_annotations(self, ann_file):
         """Load annotation from COCO style annotation file.
