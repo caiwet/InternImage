@@ -4,6 +4,7 @@ import os.path as osp
 import tempfile
 import warnings
 from collections import OrderedDict
+import wandb
 
 import mmcv
 import numpy as np
@@ -16,12 +17,16 @@ from mmdet.datasets.api_wrappers import COCO, COCOeval
 from mmdet.datasets.custom import CustomDataset
 from mmdet.datasets.builder import DATASETS
 
+import pandas as pd
+from .eval import ETTEvaler
+
+import json
 
 @DATASETS.register_module()
 class ETTDataset(CustomDataset):
 
-    CLASSES = ('carina', 'tip', 'clavicle')
-    # CLASSES = ('carina', 'tip', 'left clavicle', 'right clavicle')
+    # CLASSES = ('carina', 'tip', 'clavicle')
+    CLASSES = ('carina', 'tip', 'left clavicle', 'right clavicle')
 
     def load_annotations(self, ann_file):
         """Load annotation from COCO style annotation file.
@@ -335,6 +340,28 @@ class ETTDataset(CustomDataset):
         result_files = self.results2json(results, jsonfile_prefix)
         return result_files, tmp_dir
 
+    def _get_max_pred_bbox(self, data):
+        max_score = {}
+        for pred in data:
+            key = (pred['image_id'], pred['category_id'])
+            if key not in max_score.keys():
+                max_score[key] = [pred]
+            elif pred['category_id'] == 3046 or pred['category_id'] == 3047:
+                if pred['score'] > max_score[key][0]['score']:
+                    max_score[key] = [pred]
+        return max_score
+
+    def _get_labels(self, max_score, thres):
+        pred_labels = []
+        for item in max_score:
+            item=item[0]
+            if item['score'] > thres:
+                x = item['bbox'][0] + item['bbox'][2]/2
+                y = item['bbox'][1] + item['bbox'][3]/2
+                pred_labels.append([item['image_id'], item['category_id'], x, y])
+        pred_labels = pd.DataFrame(data=pred_labels, columns=["image_id", "category_id", "x", "y"])
+        return pred_labels
+
     def evaluate(self,
                  results,
                  metric='bbox',
@@ -388,6 +415,38 @@ class ETTDataset(CustomDataset):
         result_files, tmp_dir = self.format_results(results, jsonfile_prefix)
 
         eval_results = OrderedDict()
+        # breakpoint()
+        f = open(result_files['bbox'])
+        pred_files = f.read()
+        pred_files = json.loads(pred_files)
+
+        max_score = self._get_max_pred_bbox(pred_files)
+        max_score = list(max_score.values())
+        pred_labels = self._get_labels(max_score, iou_thrs[0])
+        gt_labels = pd.read_csv("labels/gt_labels_mimic_only_val.csv")
+        evaler = ETTEvaler(gt_labels, pred_labels, 1280)
+        # breakpoint()
+        tp, fp, tn, fn, distances = evaler.gt_pred_distance(target='tip')
+        eval_results['mean_tip_distance'] = np.mean(distances)
+        precision = tp/(tp+fp+0.00001)
+        recall = tp/(tp+fn+0.00001)
+        sensitivity = tp/(tp+fn+0.00001)
+        specificity = tn/(tn+fp+0.00001)
+        f1 = 2*precision*recall/(precision+recall+0.00001)
+        eval_results['sensitivity'] = sensitivity
+        eval_results['precision'] = precision
+        eval_results['recall'] = recall
+        eval_results['specificity'] = specificity
+        eval_results['f1'] = f1
+        # wandb.log({
+        #     "sensitivity": sensitivity,
+        #     "precision": precision,
+        #     "recall": recall,
+        #     "specificity": specificity,
+        #     "f1": f1
+        # })
+
+
         cocoGt = self.coco
         for metric in metrics:
             msg = f'Evaluating {metric}...'
@@ -477,6 +536,7 @@ class ETTDataset(CustomDataset):
                         f'{cocoEval.stats[coco_metric_names[item]]:.3f}')
                     eval_results[item] = val
             else:
+                # breakpoint()
                 cocoEval.evaluate()
                 cocoEval.accumulate()
                 cocoEval.summarize()
@@ -531,4 +591,4 @@ class ETTDataset(CustomDataset):
                     f'{ap[4]:.3f} {ap[5]:.3f}')
         if tmp_dir is not None:
             tmp_dir.cleanup()
-        return
+        return eval_results

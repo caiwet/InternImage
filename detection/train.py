@@ -113,10 +113,10 @@ def parse_args():
 
 
 def main():
+    wandb.init()
     args = parse_args()
 
     default_cfg = Config.fromfile(args.config)
-
 
     # replace the ${key} with the value of cfg.key
     default_cfg = replace_cfg_vals(default_cfg)
@@ -124,8 +124,6 @@ def main():
     # update data root according to MMDET_DATASETS
     update_data_root(default_cfg)
 
-    wandb.init()
-    # cfg = wandb.config
     cfg = default_cfg
 
     if args.cfg_options is not None:
@@ -230,6 +228,9 @@ def main():
     # wandb.log({"lr": wandb.config.lr, "weight_decay": wandb.config.weight_decay,
     #            "max_epochs": wandb.config.max_epochs})
 
+    cfg.evaluation.iou_thrs = [wandb.config.iou_thrs]
+    wandb.log({"iou_thrs": wandb.config.iou_thrs})
+
     model = build_detector(cfg.model,
                            train_cfg=cfg.get('train_cfg'),
                            test_cfg=cfg.get('test_cfg'))
@@ -258,8 +259,9 @@ def main():
          init_kwargs={'project': 'InternImage'},
          interval=1,
          log_checkpoint=True,
-         log_checkpoint_metadata=True
+         log_checkpoint_metadata=False
         )]
+    # breakpoint()
 
     train_detector(model,
                    datasets,
@@ -269,27 +271,33 @@ def main():
                    timestamp=timestamp,
                    meta=meta,
     )
+    wandb.finish()
 
 if __name__ == '__main__':
+    # args = parse_args()
+    # wandb.init(project='internimage-iou-sweep', group='group')
     sweep_config = {
-        'method': 'random',
+        'method': 'grid',
         'metric': {
             'name': 'bbox',
             'goal': 'maximize',
         },
         'parameters': {
-            'lr': {
-                'min': 0.000001,
-                'max': 0.0001
-            },
-            'weight_decay': {
-                'values': [0.05, 0.01]
-            },
-            'max_epochs': {
-                'values': [12, 20, 50]
+            'iou_thrs': {
+                'values': [0.01, 0.1] #[0.2, 0.3, 0.5, 0.7]
             }
+            # 'lr': {
+            #     'min': 0.000001,
+            #     'max': 0.0001
+            # },
+            # 'weight_decay': {
+            #     'values': [0.05, 0.01]
+            # },
+            # 'max_epochs': {
+            #     'values': [12, 20, 50]
+            # }
         }
     }
-    # sweep_id = wandb.sweep(sweep=sweep_config, project='my-first-sweep')
-    # wandb.agent(sweep_id, function=main, count=4)
-    main()
+    sweep_id = wandb.sweep(sweep=sweep_config)
+    wandb.agent(sweep_id, main)
+    # main()
