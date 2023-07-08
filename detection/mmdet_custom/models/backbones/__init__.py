@@ -5,5 +5,6 @@
 # --------------------------------------------------------
 
 from .intern_image import InternImage
+from .custom_intern_image import CustomInternImage
 
-__all__ = ['InternImage']
+__all__ = ['InternImage', 'CustomInternImage']

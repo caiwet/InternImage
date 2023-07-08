@@ -13,9 +13,25 @@ _base_ = [
 ]
 pretrained = 'https://huggingface.co/OpenGVLab/InternImage/resolve/main/internimage_t_1k_224.pth'
 model = dict(
+    # backbone=dict(
+    #     _delete_=True,
+    #     type='InternImage',
+    #     core_op='DCNv3',
+    #     channels=64,
+    #     depths=[4, 4, 18, 4],
+    #     groups=[4, 8, 16, 32],
+    #     mlp_ratio=4.,
+    #     drop_path_rate=0.2,
+    #     norm_layer='LN',
+    #     layer_scale=1.0,
+    #     offset_scale=1.0,
+    #     post_norm=False,
+    #     with_cp=False,
+    #     out_indices=(0, 3),
+    #     init_cfg=dict(type='Pretrained', checkpoint=pretrained)),
     backbone=dict(
         _delete_=True,
-        type='InternImage',
+        type='CustomInternImage',
         core_op='DCNv3',
         channels=64,
         depths=[4, 4, 18, 4],
@@ -27,11 +43,11 @@ model = dict(
         offset_scale=1.0,
         post_norm=False,
         with_cp=False,
-        out_indices=(0, 1, 2, 3),
+        out_indices=(0, 1, 2, 3, 4), # first 4 indices are internimage, last indice are gloria
         init_cfg=dict(type='Pretrained', checkpoint=pretrained)),
     neck=dict(
         type='FPN',
-        in_channels=[64, 128, 256, 512],
+        in_channels=[64, 128, 256, 512, 1024], # first 4 channels are internimage, last channel are gloria
         out_channels=256,
         num_outs=5))
 # By default, models are trained on 8 GPUs with 2 images per GPU

@@ -56,9 +56,9 @@ data = dict(
         classes=classes,
         # ann_file=data_root + '../Test/downsized/RANZCR/annotations/test_annotations_enl5.json',
         # img_prefix=data_root + '../Test/downsized/RANZCR/images',
-        ann_file=data_root + 'annotations/val_annotations_enl5.json',
-        img_prefix=data_root + 'images/val',
-        # ann_file=data_root + 'annotations_enlarged_10.json',
-        # img_prefix=data_root + 'enlarged10_1280/images/train',
+        ann_file=data_root + '../Test/downsized/MIMIC/annotations/test_annotations_enl5.json',
+        img_prefix=data_root + '../Test/downsized/MIMIC/images',
+        # ann_file=data_root + 'annotations/val_annotations_enl5.json',
+        # img_prefix=data_root + 'images/val',
         pipeline=test_pipeline))
 evaluation = dict(metric=['bbox'], iou_thrs=[0.3], classwise=True)

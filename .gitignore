@@ -3,3 +3,10 @@
 .DS_Store
 classification/convertor/
 segmentation/convertor/
+detection/wandb/
+detection/work_dirs*/
+detection/test_results*/
+detection/mmdet_custom/work_dirs*/
+detection/mmdet_custom/models/backbones/cxrlearn_copy.zip
+*.pth
+*.png

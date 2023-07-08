@@ -228,8 +228,8 @@ def main():
     # wandb.log({"lr": wandb.config.lr, "weight_decay": wandb.config.weight_decay,
     #            "max_epochs": wandb.config.max_epochs})
 
-    cfg.evaluation.iou_thrs = [wandb.config.iou_thrs]
-    wandb.log({"iou_thrs": wandb.config.iou_thrs})
+    # cfg.evaluation.iou_thrs = [wandb.config.iou_thrs]
+    # wandb.log({"iou_thrs": wandb.config.iou_thrs})
 
     model = build_detector(cfg.model,
                            train_cfg=cfg.get('train_cfg'),
@@ -298,6 +298,6 @@ if __name__ == '__main__':
             # }
         }
     }
-    sweep_id = wandb.sweep(sweep=sweep_config)
-    wandb.agent(sweep_id, main)
-    # main()
+    # sweep_id = wandb.sweep(sweep=sweep_config)
+    # wandb.agent(sweep_id, main)
+    main()
