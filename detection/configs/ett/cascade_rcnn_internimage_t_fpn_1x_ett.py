@@ -53,8 +53,8 @@ model = dict(
 # By default, models are trained on 8 GPUs with 2 images per GPU
 data = dict(samples_per_gpu=2)
 optimizer = dict(
-    _delete_=True, type='AdamW', weight_decay=0.01,
-    lr=0.000078,
+    _delete_=True, type='AdamW', weight_decay=0.02,
+    lr=0.0001,
     constructor='CustomLayerDecayOptimizerConstructor',
     # auto_scale_lr = dict(enable=True, base_batch_size=16),
     paramwise_cfg=dict(num_layers=30, layer_decay_rate=1.0,

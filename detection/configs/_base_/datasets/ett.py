@@ -3,7 +3,7 @@ dataset_type = 'ETTDataset'
 # classes = ('carina', 'tip', 'left clavicle', 'right clavicle')
 classes = ('carina', 'tip', 'clavicles')
 
-data_root = '/home/ec2-user/segmenter/ETTDATA/train_mimic_only/'
+data_root = '/n/data1/hms/dbmi/rajpurkar/lab/ett/all_data_split/'
 # data_root = '/home/ec2-user/segmenter/MAIDA/MIMIC_ETT_annotations/'
 img_norm_cfg = dict(
     mean=[126.55846604, 126.55846604, 126.55846604], std=[55.47551373, 55.47551373, 55.47551373], to_rgb=True)
@@ -56,9 +56,9 @@ data = dict(
         classes=classes,
         # ann_file=data_root + '../Test/downsized/RANZCR/annotations/test_annotations_enl5.json',
         # img_prefix=data_root + '../Test/downsized/RANZCR/images',
-        ann_file=data_root + '../Test/downsized/MIMIC/annotations/test_annotations_enl5.json',
-        img_prefix=data_root + '../Test/downsized/MIMIC/images',
-        # ann_file=data_root + 'annotations/val_annotations_enl5.json',
-        # img_prefix=data_root + 'images/val',
+#         ann_file=data_root + '../Test/downsized/MIMIC/annotations/test_annotations_enl5.json',
+#         img_prefix=data_root + '../Test/downsized/MIMIC/images',
+        ann_file=data_root + '../hospital_downsized/University_of_Miami/annotations/annotations.json',
+        img_prefix=data_root + '../hospital_downsized/University_of_Miami/images',
         pipeline=test_pipeline))
 evaluation = dict(metric=['bbox'], iou_thrs=[0.3], classwise=True)

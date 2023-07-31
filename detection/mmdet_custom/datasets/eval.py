@@ -7,20 +7,20 @@ from matplotlib import pyplot as plt
 
 class ETTEvaler:
     """
-    gt_file: .csv file with groundtruth information in the format of image_id, category_id, x, y
-    pred_file: .csv file with predicted information in the format of image_id, category_id, x, y
+    gt_labels: df with groundtruth information in the format of image_id, category_id, x, y
+    pred_labels: df with predicted information in the format of image_id, category_id, x, y
     resized_dim: resized dimension of images, integer
     """
-    def __init__(self, gt_file, pred_file, resized_dim) -> None:
+    def __init__(self, gt_labels, pred_labels, resized_dim) -> None:
         assert isinstance(resized_dim, int), "resized_dim should be an int"
 
         self.encode = {'tip': 1,
                        'carina': 0}
-        self.gt_labels = gt_file
-        self.pred_labels = pred_file
+        self.gt_labels = gt_labels
+        self.pred_labels = pred_labels
         self.thres = resized_dim
         self.resized_dim = resized_dim
-        self.convert = pd.read_csv("/home/ec2-user/segmenter/ETT_Evaluation/pixel_spacing.csv")
+        self.convert = pd.read_csv("/home/cat302/ETT-Project/ETT_Evaluation/pixel_spacing.csv")
 
     """
     Get metrics report for error between prediction and groundtruth.

@@ -1,0 +1,4 @@
+srun: error: lua: You have more than one Slurm account, must specify --account=NAME where NAME is a Slurm account name. Use    sshare -U -u $USER    to list your Slurm accounts associations
+srun: error: cli_filter plugin terminated with error
+srun: error: lua: You have more than one Slurm account, must specify --account=NAME where NAME is a Slurm account name. Use    sshare -U -u $USER    to list your Slurm accounts associations
+srun: error: cli_filter plugin terminated with error

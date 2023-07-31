@@ -113,7 +113,8 @@ def parse_args():
 
 
 def main():
-    wandb.init()
+    wandb.init(project='internimage-gloria-all-data', group='group-5')
+    # wandb.init()
     args = parse_args()
 
     default_cfg = Config.fromfile(args.config)
@@ -223,10 +224,13 @@ def main():
     # Sweep - hyperparameter tuning
     # cfg.optimizer.lr = wandb.config.lr
     # cfg.optimizer.weight_decay = wandb.config.weight_decay
-    # cfg.runner.max_epochs = wandb.config.max_epochs
+    # breakpoint()
+    # cfg.train_pipeline.flip_ratio = wandb.config.flip_ratio
 
-    # wandb.log({"lr": wandb.config.lr, "weight_decay": wandb.config.weight_decay,
-    #            "max_epochs": wandb.config.max_epochs})
+    wandb.log({"lr": cfg.optimizer.lr,
+               "weight_decay": cfg.optimizer.weight_decay,
+            #    "flip_ratio": wandb.config.flip_ratio,
+               })
 
     # cfg.evaluation.iou_thrs = [wandb.config.iou_thrs]
     # wandb.log({"iou_thrs": wandb.config.iou_thrs})
@@ -256,7 +260,7 @@ def main():
     cfg.log_config.hooks = [
     dict(type='TextLoggerHook'),
     dict(type='MMDetWandbHook',
-         init_kwargs={'project': 'InternImage'},
+         init_kwargs={'project': 'internimage-gloria'},
          interval=1,
          log_checkpoint=True,
          log_checkpoint_metadata=False
@@ -271,33 +275,35 @@ def main():
                    timestamp=timestamp,
                    meta=meta,
     )
-    wandb.finish()
+
 
 if __name__ == '__main__':
     # args = parse_args()
-    # wandb.init(project='internimage-iou-sweep', group='group')
+
     sweep_config = {
-        'method': 'grid',
+        'method': 'random',
         'metric': {
-            'name': 'bbox',
+            'name': 'combined',
             'goal': 'maximize',
         },
         'parameters': {
-            'iou_thrs': {
-                'values': [0.01, 0.1] #[0.2, 0.3, 0.5, 0.7]
-            }
-            # 'lr': {
-            #     'min': 0.000001,
-            #     'max': 0.0001
-            # },
-            # 'weight_decay': {
-            #     'values': [0.05, 0.01]
-            # },
-            # 'max_epochs': {
-            #     'values': [12, 20, 50]
+            # 'iou_thrs': {
+            #     'values': [0.01, 0.1] #[0.2, 0.3, 0.5, 0.7]
+            # }
+            'lr': {
+                'min': 0.000001,
+                'max': 0.01
+            },
+            'weight_decay': {
+                'min': 0.01,
+                'max': 0.5
+            },
+            # 'flip_ratio': {
+            #     'values': [0.1, 0.2, 0.3, 0.4, 0.5]
             # }
         }
     }
-    # sweep_id = wandb.sweep(sweep=sweep_config)
-    # wandb.agent(sweep_id, main)
+    # sweep_id = wandb.sweep(sweep=sweep_config, project='internimage-gloria-sweep')
+    # wandb.agent(sweep_id, function=main, count=20)
     main()
+    wandb.finish()

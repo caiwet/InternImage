@@ -19,6 +19,7 @@ from mmdet.datasets.builder import DATASETS
 
 import pandas as pd
 from .eval import ETTEvaler
+from .updated_eval import UpdatedMetric
 
 import json
 
@@ -351,15 +352,16 @@ class ETTDataset(CustomDataset):
                     max_score[key] = [pred]
         return max_score
 
-    def _get_labels(self, max_score, thres):
+    # Set thres=0 to select prediction for each image
+    def _get_labels(self, max_score, thres=0):
         pred_labels = []
         for item in max_score:
             item=item[0]
             if item['score'] > thres:
                 x = item['bbox'][0] + item['bbox'][2]/2
                 y = item['bbox'][1] + item['bbox'][3]/2
-                pred_labels.append([item['image_id'], item['category_id'], x, y])
-        pred_labels = pd.DataFrame(data=pred_labels, columns=["image_id", "category_id", "x", "y"])
+                pred_labels.append([item['image_id'], item['category_id'], x, y, item['score']])
+        pred_labels = pd.DataFrame(data=pred_labels, columns=["image_id", "category_id", "x", "y", "prob"])
         return pred_labels
 
     def evaluate(self,
@@ -415,37 +417,6 @@ class ETTDataset(CustomDataset):
         result_files, tmp_dir = self.format_results(results, jsonfile_prefix)
 
         eval_results = OrderedDict()
-        # breakpoint()
-        f = open(result_files['bbox'])
-        pred_files = f.read()
-        pred_files = json.loads(pred_files)
-
-        max_score = self._get_max_pred_bbox(pred_files)
-        max_score = list(max_score.values())
-        pred_labels = self._get_labels(max_score, iou_thrs[0])
-        gt_labels = pd.read_csv("labels/gt_labels_mimic_only_val.csv")
-        evaler = ETTEvaler(gt_labels, pred_labels, 1280)
-        # breakpoint()
-        tp, fp, tn, fn, distances = evaler.gt_pred_distance(target='tip')
-        eval_results['mean_tip_distance'] = np.mean(distances)
-        precision = tp/(tp+fp+0.00001)
-        recall = tp/(tp+fn+0.00001)
-        sensitivity = tp/(tp+fn+0.00001)
-        specificity = tn/(tn+fp+0.00001)
-        f1 = 2*precision*recall/(precision+recall+0.00001)
-        eval_results['sensitivity'] = sensitivity
-        eval_results['precision'] = precision
-        eval_results['recall'] = recall
-        eval_results['specificity'] = specificity
-        eval_results['f1'] = f1
-        # wandb.log({
-        #     "sensitivity": sensitivity,
-        #     "precision": precision,
-        #     "recall": recall,
-        #     "specificity": specificity,
-        #     "f1": f1
-        # })
-
 
         cocoGt = self.coco
         for metric in metrics:
@@ -536,7 +507,53 @@ class ETTDataset(CustomDataset):
                         f'{cocoEval.stats[coco_metric_names[item]]:.3f}')
                     eval_results[item] = val
             else:
-                # breakpoint()
+                f = open(result_files['bbox'])
+                pred_files = f.read()
+                pred_files = json.loads(pred_files)
+
+                max_score = self._get_max_pred_bbox(pred_files)
+                max_score = list(max_score.values())
+                pred_labels = self._get_labels(max_score, thres=0)
+                gt_labels = pd.read_csv("labels/gt_labels_University_of_Miami.csv")
+
+                metric = UpdatedMetric(
+                    gt_labels = gt_labels,
+                    pred_labels = pred_labels,
+                    pixel_spacing_file="/home/cat302/ETT-Project/ETT_Evaluation/pixel_spacing.csv",
+                    resized_dim = 1280,
+                    encode={"carina": 3046, "ett": 3047}
+                )
+                values = metric.eval_all()
+                eval_results['combined'] = values[0]
+                eval_results['AP_carina'] = values[1]
+                eval_results['AUC_ETT'] = values[2]
+                eval_results['F1_normal_abnormal'] = values[3]
+
+                evaler = ETTEvaler(gt_labels, pred_labels, 1280)
+                tp, fp, tn, fn, distances = evaler.gt_pred_distance(target='tip')
+                eval_results['mean_tip_distance'] = np.mean(distances)
+                precision = tp/(tp+fp+0.00001)
+                recall = tp/(tp+fn+0.00001)
+                sensitivity = tp/(tp+fn+0.00001)
+                specificity = tn/(tn+fp+0.00001)
+                f1 = 2*precision*recall/(precision+recall+0.00001)
+                eval_results['sensitivity'] = sensitivity
+                eval_results['precision'] = precision
+                eval_results['recall'] = recall
+                eval_results['specificity'] = specificity
+                eval_results['f1_tip_prediction'] = f1
+
+                # wandb.log({
+                #     "sensitivity": sensitivity,
+                #     "precision": precision,
+                #     "recall": recall,
+                #     "specificity": specificity,
+                #     "f1_tip_prediction": f1,
+                #     "combined": values[0],
+                #     "AP_carina": values[1],
+                #     "AUC_ETT": values[2],
+                #     "F1_normal_abnormal": values[3]
+                # })
                 cocoEval.evaluate()
                 cocoEval.accumulate()
                 cocoEval.summarize()
