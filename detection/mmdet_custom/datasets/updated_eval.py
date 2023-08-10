@@ -3,18 +3,14 @@ import pandas as pd
 import sklearn.metrics as metrics
 
 class UpdatedMetric:
-    def __init__(self, gt_labels, pred_labels, pixel_spacing_file, resized_dim, encode={"carina": 0, "ett": 1}):
+    def __init__(self, gt_labels, pred_labels, pixel_spacing_file, resized_dim, encode={"carina": 0, "tip": 1}):
         self.encode = encode
-        # self.convert = pd.read_csv("/home/cat302/ETT-Project/ETT_Evaluation/pixel_spacing.csv")
         self.pixel_spacing = pd.read_csv(pixel_spacing_file)
         self.gt_labels = gt_labels
         self.pred_labels = pred_labels
         self.resized_dim = resized_dim
         self.gt_carina, self.gt_ett = self.get_coords(file=self.gt_labels)
         self.pred_carina, self.pred_ett = self.get_coords(file=self.pred_labels)
-
-
-
 
     def get_coords(self, file, set_ratio=None):
         """Get coordinate of carina and ett
@@ -27,6 +23,7 @@ class UpdatedMetric:
         """
 
         # Rescale based on pixel spacing
+        # breakpoint()
         if set_ratio: # override ratio specified in the pixel_spacing_file
             file["x"] = file["x"] * set_ratio
             file["y"] = file["y"] * set_ratio
@@ -36,10 +33,10 @@ class UpdatedMetric:
                 scale = self.pixel_to_cm(img_id)
                 file.loc[i, "x"] = file.loc[i, "x"] * scale
                 file.loc[i, "y"] = file.loc[i, "y"] * scale
-
+        # breakpoint()
         # Filter for carina and ett
         carina = file[file["category_id"] == self.encode["carina"]]
-        ett = file[file["category_id"] == self.encode["ett"]]
+        ett = file[file["category_id"] == self.encode["tip"]]
         return carina, ett
 
 
@@ -52,19 +49,23 @@ class UpdatedMetric:
         Returns:
             scale: ratio to multiply in order to convert pixel to cm
         """
-        return 0.03 # test for hospitals
-#         # Get data for image id
-#         tmp = self.pixel_spacing[self.pixel_spacing['image_id']==img_id]
-#         if len(tmp) == 0:
-# #             print(img_id)
-#             return 2500*0.139*0.1/self.resized_dim # a random default value
-# #             raise ValueError("Image id not found in pixel spacing file")
 
-#         # Crop based on min of width and height.
-#         cropped_size = min(int(tmp['original_width']), int(tmp['original_height']))
-#         ps = cropped_size * float(tmp['pixel_spacing_x']) / self.resized_dim # Assume x and y have the same pixel spacing
-#         scale = ps * 0.1 # multiply by 0.1 b/c pixel spacing conversion ratio in the csv file converts to mm
-#         return scale
+        # return 0.03 # test for hospitals
+
+        # Get data for image id
+        tmp = self.pixel_spacing[self.pixel_spacing['image_id']==img_id]
+        breakpoint()
+        if len(tmp) == 0:
+            print(img_id)
+            breakpoint()
+            return 2500*0.139*0.1/self.resized_dim # a random default value
+#             raise ValueError("Image id not found in pixel spacing file")
+
+        # Crop based on min of width and height.
+        cropped_size = min(int(tmp['original_width']), int(tmp['original_height']))
+        ps = cropped_size * float(tmp['pixel_spacing_x']) / self.resized_dim # Assume x and y have the same pixel spacing
+        scale = ps * 0.1 # multiply by 0.1 b/c pixel spacing conversion ratio in the csv file converts to mm
+        return scale
 
 
     def filter_carina(self, gt, pred):
@@ -153,6 +154,7 @@ class UpdatedMetric:
 
         # Compute metrics for ett
         pred_binary, gt_binary, pred_prob, gt_ett, pred_ett = self.filter_ett(self.gt_ett, self.pred_ett)
+        # breakpoint()
         AUC_ETT = self.ETT_eval(pred_binary, gt_binary, pred_prob, gt_ett, pred_ett, thres_c=ett_thres_c)
 
         # Compute metrics for normal vs abnormal
@@ -191,6 +193,34 @@ class UpdatedMetric:
                 print(f"Precision for threshold {x} is {precision}")
         return np.mean(precision_list)
 
+    def simplified_precision_recall_curve(self, y_true, y_scores, additional_filter=None):
+        # Ensure y_true and y_scores are numpy arrays
+        y_true = np.array(y_true)
+        y_scores = np.array(y_scores)
+        additional_filter = np.array(additional_filter)
+
+        # Sort prediction scores and true labels based on scores in descending order
+        desc_score_indices = np.argsort(y_scores)[::-1]
+        y_scores = y_scores[desc_score_indices]
+        y_true = y_true[desc_score_indices]
+
+        # If additional feature (e.g., thresholding based on error) is provided
+        if additional_filter is not None:
+            additional_filter = np.array(additional_filter)
+            additional_filter = additional_filter[desc_score_indices]
+
+        # Compute true positive and false positive rates
+        tp = np.cumsum(y_true & additional_filter)  # True positives
+        fp = np.cumsum(~y_true & additional_filter)  # False positives
+
+        precision = tp / (tp + fp + 0.00001)
+        recall = tp / np.sum(y_true)
+
+        # Add an additional data point at the beginning
+        precision = np.r_[1, precision]
+        recall = np.r_[0, recall]
+
+        return recall, precision, y_scores
 
     def ETT_eval(self, pred_binary, gt_binary, pred_prob, gt_coord, pred_coord, thres_c, thres_d=[0.5], verbose=False):
         """Compute the AUC of ETT detection.
@@ -208,10 +238,9 @@ class UpdatedMetric:
         Outputs:
             AUC: float
         """
+        # breakpoint()
         errors = np.linalg.norm(gt_coord - pred_coord, axis=1)
-
-        y_true_thresholded = [y_true and error < thres_d[0] for (y_true, error) in zip(gt_binary, errors)]
-        precision, recall, thresholds = metrics.precision_recall_curve(y_true_thresholded, pred_prob)
+        recall, precision, _ = self.simplified_precision_recall_curve(gt_binary, pred_prob, errors < thres_d[0])
         auc = metrics.auc(recall, precision)
         return auc
 

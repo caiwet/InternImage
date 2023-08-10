@@ -11,16 +11,17 @@ class ETTEvaler:
     pred_labels: df with predicted information in the format of image_id, category_id, x, y
     resized_dim: resized dimension of images, integer
     """
-    def __init__(self, gt_labels, pred_labels, resized_dim) -> None:
+    def __init__(self, gt_labels, pred_labels, resized_dim,
+                 encode={'tip':1, 'carina':0},
+                 pixel_spacing_file="/home/cat302/ETT-Project/ETT_Evaluation/pixel_spacing.csv") -> None:
         assert isinstance(resized_dim, int), "resized_dim should be an int"
 
-        self.encode = {'tip': 1,
-                       'carina': 0}
+        self.encode = encode
         self.gt_labels = gt_labels
         self.pred_labels = pred_labels
         self.thres = resized_dim
         self.resized_dim = resized_dim
-        self.convert = pd.read_csv("/home/cat302/ETT-Project/ETT_Evaluation/pixel_spacing.csv")
+        self.convert = pd.read_csv(pixel_spacing_file)
 
     """
     Get metrics report for error between prediction and groundtruth.
@@ -86,10 +87,13 @@ class ETTEvaler:
             if not target_exist:
                 if not target_predicted:
                     tn += 1
+                    print(f"True Negative: {img_id}")
                 else:
                     fp += 1
+                    print(f"False Positive: {img_id}")
             elif not target_predicted:
                 fn += 1
+                print(f"False Negative: {img_id}")
             else:
                 tp += 1
                 # dis = math.dist((gt_label['x'], gt_label['y']), (pred_label['x'], pred_label['y']))
@@ -101,12 +105,13 @@ class ETTEvaler:
                 dis = self.pixel_to_cm(img_id, dis)
                 if dis:
                     distances.append(dis)
+                    print(f"Image id: {img_id}, Distance: {dis}")
         return tp, fp, tn, fn, distances
 
     def pixel_to_cm(self, img_id, dis):
         tmp = self.convert[self.convert['image_id']==img_id]
         if len(tmp) == 0:
-            return None
+            return dis*2500*0.139*0.1/self.resized_dim
         cropped_size = min(int(tmp['original_width']), int(tmp['original_height']))
         ps = cropped_size * float(tmp['pixel_spacing_x']) / self.resized_dim  ## Assume x and y have the same pixel spacing
 

@@ -739,8 +739,10 @@ class CustomInternImage(nn.Module):
             x, x_ = level(x, return_wo_downsample=True)
             if level_idx in self.out_indices:
                 seq_out.append(x_.permute(0, 3, 1, 2).contiguous())
-        
+
         # add gloria to the end of seq_out
         seq_out.append(gloria_local.contiguous())
+
+        # breakpoint()
 
         return seq_out

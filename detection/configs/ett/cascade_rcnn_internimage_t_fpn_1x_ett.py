@@ -4,7 +4,6 @@
 # Licensed under The MIT License [see LICENSE for details]
 # --------------------------------------------------------
 
-import wandb
 _base_ = [
     '../_base_/models/cascade_rcnn_r50_fpn.py',
     '../_base_/datasets/ett.py',
@@ -61,7 +60,7 @@ optimizer = dict(
                        depths=[4, 4, 18, 4]))
 optimizer_config = dict(grad_clip=None)
 # fp16 = dict(loss_scale=dict(init_scale=512))
-max_epochs=12
+max_epochs=20
 num_last_epochs=3
 evaluation = dict(save_best='auto',
                   interval=1,
@@ -72,5 +71,11 @@ checkpoint_config = dict(
     max_keep_ckpts=1,
     save_last=True,
 )
+lr_config = dict(
+    policy='step',
+    warmup='linear',
+    warmup_iters=2,
+    warmup_ratio=0.001,
+    step=[3, 5, 8, 11])
 runner = dict(type='EpochBasedRunner', max_epochs=max_epochs)
 

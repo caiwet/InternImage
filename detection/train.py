@@ -113,7 +113,7 @@ def parse_args():
 
 
 def main():
-    wandb.init(project='internimage-gloria-all-data', group='group-5')
+    wandb.init(project='all-data', group='retrain')
     # wandb.init()
     args = parse_args()
 
@@ -227,10 +227,10 @@ def main():
     # breakpoint()
     # cfg.train_pipeline.flip_ratio = wandb.config.flip_ratio
 
-    wandb.log({"lr": cfg.optimizer.lr,
-               "weight_decay": cfg.optimizer.weight_decay,
-            #    "flip_ratio": wandb.config.flip_ratio,
-               })
+    # wandb.log({"lr": cfg.optimizer.lr,
+    #            "weight_decay": cfg.optimizer.weight_decay,
+    #         #    "flip_ratio": wandb.config.flip_ratio,
+    #            })
 
     # cfg.evaluation.iou_thrs = [wandb.config.iou_thrs]
     # wandb.log({"iou_thrs": wandb.config.iou_thrs})

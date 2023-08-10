@@ -514,14 +514,17 @@ class ETTDataset(CustomDataset):
                 max_score = self._get_max_pred_bbox(pred_files)
                 max_score = list(max_score.values())
                 pred_labels = self._get_labels(max_score, thres=0)
-                gt_labels = pd.read_csv("labels/gt_labels_University_of_Miami.csv")
+                gt_labels = pd.read_csv("labels/gt_labels_Austral.csv")
 
+                # encode={"carina": 0, "tip": 1}
+                encode={"carina": 3046, "tip": 3047}
+                pixel_spacing_file = "/home/cat302/ETT-Project/ETT_Evaluation/pixel_spacing_10_hospitals.csv"
                 metric = UpdatedMetric(
-                    gt_labels = gt_labels,
-                    pred_labels = pred_labels,
-                    pixel_spacing_file="/home/cat302/ETT-Project/ETT_Evaluation/pixel_spacing.csv",
+                    gt_labels = gt_labels.copy(),
+                    pred_labels = pred_labels.copy(),
+                    pixel_spacing_file=pixel_spacing_file,
                     resized_dim = 1280,
-                    encode={"carina": 3046, "ett": 3047}
+                    encode=encode
                 )
                 values = metric.eval_all()
                 eval_results['combined'] = values[0]
@@ -529,7 +532,8 @@ class ETTDataset(CustomDataset):
                 eval_results['AUC_ETT'] = values[2]
                 eval_results['F1_normal_abnormal'] = values[3]
 
-                evaler = ETTEvaler(gt_labels, pred_labels, 1280)
+                evaler = ETTEvaler(gt_labels.copy(), pred_labels.copy(), 1280, encode=encode,
+                                   pixel_spacing_file=pixel_spacing_file)
                 tp, fp, tn, fn, distances = evaler.gt_pred_distance(target='tip')
                 eval_results['mean_tip_distance'] = np.mean(distances)
                 precision = tp/(tp+fp+0.00001)

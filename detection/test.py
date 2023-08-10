@@ -192,6 +192,7 @@ def main():
         json_file = osp.join(args.work_dir, f'eval_{timestamp}.json')
 
     # build the dataloader
+    # breakpoint()
     dataset = build_dataset(cfg.data.test)
     data_loader = build_dataloader(dataset,
                                    samples_per_gpu=samples_per_gpu,
@@ -218,6 +219,7 @@ def main():
 
     if not distributed:
         model = MMDataParallel(model, device_ids=cfg.gpu_ids)
+        # breakpoint()
         outputs = single_gpu_test(model, data_loader, args.show, args.show_dir,
                                   args.show_score_thr)
     else:
