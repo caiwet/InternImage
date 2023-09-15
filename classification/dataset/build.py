@@ -176,6 +176,19 @@ def build_dataset(split, config):
             root = os.path.join(config.DATA.DATA_PATH, 'val')
             dataset = ImageCephDataset(root, 'val', transform=transform)
             nb_classes = 1000
+    elif config.DATA.DATASET == 'ett':
+        if prefix == 'train':
+            if not config.EVAL_MODE:
+                root = config.DATA.DATA_PATH
+                dataset = ImageCephDataset(root,
+                                           'train',
+                                           transform=transform,
+                                           on_memory=config.DATA.IMG_ON_MEMORY)
+            nb_classes = 2
+        elif prefix == 'val':
+            root = os.path.join(config.DATA.DATA_PATH, 'val')
+            dataset = ImageCephDataset(root, 'val', transform=transform)
+            nb_classes = 2   #(not used?)
     else:
         raise NotImplementedError(
             f'build_dataset does support {config.DATA.DATASET}')

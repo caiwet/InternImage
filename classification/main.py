@@ -32,6 +32,7 @@ from utils import (load_checkpoint, load_pretrained, save_checkpoint,
 
 from contextlib import suppress
 from ddp_hooks import fp16_compress_hook
+import pickle
 
 try:
     from apex import amp

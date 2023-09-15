@@ -80,7 +80,7 @@ class CrossAttention(nn.Module):
         attn_head_dim (int, optional): Dimension of attention head.
         out_dim (int, optional): Dimension of output.
     """
-    
+
     def __init__(self,
                  dim,
                  num_heads=8,
@@ -172,7 +172,7 @@ class AttentiveBlock(nn.Module):
         attn_head_dim (int, optional): Dimension of attention head. Default: None.
         out_dim (int, optional): Dimension of output. Default: None.
     """
-    
+
     def __init__(self,
                  dim,
                  num_heads,
@@ -426,7 +426,6 @@ class InternImageLayer(nn.Module):
             x = _inner_forward(x)
         return x
 
-
 class InternImageBlock(nn.Module):
     r""" Block of InternImage
     Args:
@@ -516,7 +515,6 @@ class InternImageBlock(nn.Module):
         if return_wo_downsample:
             return x, x_
         return x
-
 
 class InternImage(nn.Module):
     r""" InternImage
@@ -626,7 +624,8 @@ class InternImage(nn.Module):
                 center_feature_scale=center_feature_scale # for InternImage-H/G
             )
             self.levels.append(level)
-        
+
+
         if not use_clip_projector: # for InternImage-T/S/B/L/XL
             self.conv_head = nn.Sequential(
                 nn.Conv2d(self.num_features,
@@ -659,7 +658,7 @@ class InternImage(nn.Module):
             self.fc_norm = build_norm_layer(clip_embed_dim, norm_layer, eps=1e-6)
             self.head = nn.Linear(
                 clip_embed_dim, num_classes) if num_classes > 0 else nn.Identity()
-            
+
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         self.num_layers = len(depths)
         self.apply(self._init_weights)
@@ -706,6 +705,7 @@ class InternImage(nn.Module):
         return lr_ratios
 
     def forward_features(self, x):
+
         x = self.patch_embed(x)
         x = self.pos_drop(x)
 
@@ -726,11 +726,11 @@ class InternImage(nn.Module):
             x, x_ = level(x, return_wo_downsample=True)
             seq_out.append(x_)
         return seq_out
-    
+
     def forward_clip_projector(self, x): # for InternImage-H/G
         xs = self.forward_features_seq_out(x)
         x1, x2, x3, x4 = xs
-        
+
         x1 = x1.permute(0, 3, 1, 2) # NHWC -> NCHW
         x2 = x2.permute(0, 3, 1, 2) # NHWC -> NCHW
         x3 = x3.permute(0, 3, 1, 2) # NHWC -> NCHW
@@ -744,9 +744,9 @@ class InternImage(nn.Module):
         x = x.flatten(-2).transpose(1, 2).contiguous()
         x = self.clip_projector(x)
         x = self.fc_norm(x)
-        
+
         return x
-    
+
     def forward(self, x):
         if self.use_clip_projector: # for InternImage-H/G
             x = self.forward_clip_projector(x)

@@ -1,0 +1,4 @@
+train/abnormal/117b3b47-facd2caf-7820bf0b-57edf768-b44518b4.jpg 1
+train/abnormal/8902d373-8a797750-fdf5f644-9d7f2efe-be970c1c.jpg 1
+train/normal/852b0393-cd268a37-b5cf5942-f7f1ce5c-923b22a9.jpg 0
+train/normal/ea99a6c6-34280d75-9f1ddc1c-837b3a69-a94986ea.jpg 0
