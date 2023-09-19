@@ -28,7 +28,7 @@ from mmdet.utils import (collect_env, get_device, get_root_logger,
                          update_data_root)
 import mmcv_custom  # noqa: F401,F403
 import mmdet_custom  # noqa: F401,F403
-
+import pickle
 import wandb
 wandb.login()
 
@@ -113,8 +113,7 @@ def parse_args():
 
 
 def main():
-    wandb.init(project='all-data', group='retrain')
-    # wandb.init()
+    wandb.init(project='all-data-cls-pretrained', group='0919')
     args = parse_args()
 
     default_cfg = Config.fromfile(args.config)

@@ -10,7 +10,8 @@ _base_ = [
     '../_base_/schedules/schedule_1x.py',
     '../_base_/default_runtime.py'
 ]
-pretrained = 'https://huggingface.co/OpenGVLab/InternImage/resolve/main/internimage_t_1k_224.pth'
+pretrained = '/home/cat302/ETT-Project/InternImage/detection/modified_pretrained.pth'
+# pretrained = 'https://huggingface.co/OpenGVLab/InternImage/resolve/main/internimage_t_1k_224.pth'
 model = dict(
     # backbone=dict(
     #     _delete_=True,
@@ -30,7 +31,8 @@ model = dict(
     #     init_cfg=dict(type='Pretrained', checkpoint=pretrained)),
     backbone=dict(
         _delete_=True,
-        type='CustomInternImage',
+        # type='CustomInternImage',
+        type='InternImage',
         core_op='DCNv3',
         channels=64,
         depths=[4, 4, 18, 4],
@@ -42,11 +44,13 @@ model = dict(
         offset_scale=1.0,
         post_norm=False,
         with_cp=False,
-        out_indices=(0, 1, 2, 3, 4), # first 4 indices are internimage, last indice are gloria
+        out_indices=(0, 1, 2, 3),
+        # out_indices=(0, 1, 2, 3, 4), # first 4 indices are internimage, last indice are gloria
         init_cfg=dict(type='Pretrained', checkpoint=pretrained)),
     neck=dict(
         type='FPN',
-        in_channels=[64, 128, 256, 512, 1024], # first 4 channels are internimage, last channel are gloria
+        in_channels=[64, 128, 256, 512],
+        # in_channels=[64, 128, 256, 512, 1024], # first 4 channels are internimage, last channel are gloria
         out_channels=256,
         num_outs=5))
 # By default, models are trained on 8 GPUs with 2 images per GPU
@@ -74,8 +78,9 @@ checkpoint_config = dict(
 lr_config = dict(
     policy='step',
     warmup='linear',
-    warmup_iters=2,
-    warmup_ratio=0.001,
-    step=[3, 5, 8, 11])
+    # warmup_iters=0,
+    # warmup_ratio=0.001,
+    gamma=0.1,
+    step=[1, 3, 5, 8, 11, 13, 15, 17, 19])
 runner = dict(type='EpochBasedRunner', max_epochs=max_epochs)
 

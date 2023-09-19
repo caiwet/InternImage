@@ -1,6 +1,5 @@
 # dataset settings
 dataset_type = 'ETTDataset'
-# classes = ('carina', 'tip', 'left clavicle', 'right clavicle')
 classes = ('carina', 'tip', 'clavicles')
 
 data_root = '/n/data1/hms/dbmi/rajpurkar/lab/ett/all_data_split/'
@@ -65,8 +64,8 @@ data = dict(
         # img_prefix=data_root + '../Test/downsized/RANZCR/images',
         # ann_file=data_root + '../Test/downsized/MIMIC/annotations/test_annotations_enl5.json',
         # img_prefix=data_root + '../Test/downsized/MIMIC/images',
-        ann_file=data_root + '../hospital_downsized/Austral/annotations/annotations.json',
-        img_prefix=data_root + '../hospital_downsized/Austral/images',
+        ann_file=data_root + '../hospital_downsized/Newark_Beth_Israel_Medical_Center/annotations/annotations.json',
+        img_prefix=data_root + '../hospital_downsized/Newark_Beth_Israel_Medical_Center/images',
         # ann_file=data_root + '../hospital_downsized/Chiang_Mai_University/split/annotations/test_annotations.json',
         # img_prefix=data_root + '../hospital_downsized/Chiang_Mai_University/split/images/test',
         pipeline=test_pipeline))

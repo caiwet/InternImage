@@ -743,6 +743,5 @@ class CustomInternImage(nn.Module):
         # add gloria to the end of seq_out
         seq_out.append(gloria_local.contiguous())
 
-        # breakpoint()
 
         return seq_out

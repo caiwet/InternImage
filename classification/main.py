@@ -32,7 +32,8 @@ from utils import (load_checkpoint, load_pretrained, save_checkpoint,
 
 from contextlib import suppress
 from ddp_hooks import fp16_compress_hook
-import pickle
+import wandb
+wandb.login()
 
 try:
     from apex import amp
@@ -273,14 +274,16 @@ def main(config):
         max_accuracy = load_checkpoint(config, model_without_ddp, optimizer,
                                        lr_scheduler, loss_scaler, logger)
         if data_loader_val is not None:
-            acc1, acc5, loss = validate(config, data_loader_val, model)
+            # acc1, acc5, loss = validate(config, data_loader_val, model)
+            acc1, loss = validate(config, data_loader_val, model)
             logger.info(
                 f"Accuracy of the network on the {len(dataset_val)} test images: {acc1:.1f}%"
             )
     elif config.MODEL.PRETRAINED:
         load_pretrained(config, model_without_ddp, logger)
         if data_loader_val is not None:
-            acc1, acc5, loss = validate(config, data_loader_val, model)
+            # acc1, acc5, loss = validate(config, data_loader_val, model)
+            acc1, loss = validate(config, data_loader_val, model)
             logger.info(
                 f"Accuracy of the network on the {len(dataset_val)} test images: {acc1:.1f}%"
             )
@@ -293,7 +296,8 @@ def main(config):
         print("Using EMA with decay = %.8f" % config.TRAIN.EMA.DECAY)
         if config.MODEL.RESUME:
             load_ema_checkpoint(config, model_ema, logger)
-            acc1, acc5, loss = validate(config, data_loader_val, model_ema.ema)
+            # acc1, acc5, loss = validate(config, data_loader_val, model_ema.ema)
+            acc1, loss = validate(config, data_loader_val, model_ema.ema)
             logger.info(
                 f"Accuracy of the ema network on the {len(dataset_val)} test images: {acc1:.1f}%"
             )
@@ -305,6 +309,7 @@ def main(config):
         return
 
     # train
+    wandb.init(project='InternImage-classification', group='0919')
     logger.info("Start training")
     start_time = time.time()
     for epoch in range(config.TRAIN.START_EPOCH, config.TRAIN.EPOCHS):
@@ -336,10 +341,12 @@ def main(config):
                             logger,
                             model_ema=model_ema)
         if data_loader_val is not None and epoch % config.EVAL_FREQ == 0:
-            acc1, acc5, loss = validate(config, data_loader_val, model, epoch)
+            # acc1, acc5, loss = validate(config, data_loader_val, model, epoch)
+            acc1, loss = validate(config, data_loader_val, model, epoch)
             logger.info(
                 f"Accuracy of the network on the {len(dataset_val)} test images: {acc1:.1f}%"
             )
+            wandb.log({"acc": acc1, "loss": loss})
             if dist.get_rank() == 0 and acc1 > max_accuracy:
                 save_checkpoint(config,
                                 epoch,
@@ -355,11 +362,14 @@ def main(config):
             logger.info(f'Max accuracy: {max_accuracy:.2f}%')
 
             if config.TRAIN.EMA.ENABLE:
-                acc1, acc5, loss = validate(config, data_loader_val,
+                # acc1, acc5, loss = validate(config, data_loader_val,
+                #                             model_ema.ema, epoch)
+                acc1, loss = validate(config, data_loader_val,
                                             model_ema.ema, epoch)
                 logger.info(
                     f"Accuracy of the ema network on the {len(dataset_val)} test images: {acc1:.1f}%"
                 )
+                wandb.log({"ema acc": acc1, "ema loss": loss})
                 if dist.get_rank() == 0 and acc1 > max_ema_accuracy:
                     save_checkpoint(config,
                                     epoch,
@@ -373,6 +383,7 @@ def main(config):
                                     best='ema_best')
                 max_ema_accuracy = max(max_ema_accuracy, acc1)
                 logger.info(f'Max ema accuracy: {max_ema_accuracy:.2f}%')
+                wandb.log({"Max ema accuracy": max_ema_accuracy})
 
     total_time = time.time() - start_time
     total_time_str = str(datetime.timedelta(seconds=int(total_time)))
@@ -526,7 +537,7 @@ def validate(config, data_loader, model, epoch=None):
     batch_time = AverageMeter()
     loss_meter = AverageMeter()
     acc1_meter = AverageMeter()
-    acc5_meter = AverageMeter()
+    # acc5_meter = AverageMeter()
 
     end = time.time()
     for idx, (images, target) in enumerate(data_loader):
@@ -543,15 +554,16 @@ def validate(config, data_loader, model, epoch=None):
 
         # measure accuracy and record loss
         loss = criterion(output, target)
-        acc1, acc5 = accuracy(output, target, topk=(1, 5))
+        # acc1, acc5 = accuracy(output, target, topk=(1, 5))
+        acc1 = accuracy(output, target, topk=(1, ))[0]
 
         acc1 = reduce_tensor(acc1)
-        acc5 = reduce_tensor(acc5)
+        # acc5 = reduce_tensor(acc5)
         loss = reduce_tensor(loss)
 
         loss_meter.update(loss.item(), target.size(0))
         acc1_meter.update(acc1.item(), target.size(0))
-        acc5_meter.update(acc5.item(), target.size(0))
+        # acc5_meter.update(acc5.item(), target.size(0))
 
         # measure elapsed time
         batch_time.update(time.time() - end)
@@ -563,17 +575,22 @@ def validate(config, data_loader, model, epoch=None):
                         f'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
                         f'Loss {loss_meter.val:.4f} ({loss_meter.avg:.4f})\t'
                         f'Acc@1 {acc1_meter.val:.3f} ({acc1_meter.avg:.3f})\t'
-                        f'Acc@5 {acc5_meter.val:.3f} ({acc5_meter.avg:.3f})\t'
+                        # f'Acc@5 {acc5_meter.val:.3f} ({acc5_meter.avg:.3f})\t'
                         f'Mem {memory_used:.0f}MB')
     if epoch is not None:
+        # logger.info(
+        #     f'[Epoch:{epoch}] * Acc@1 {acc1_meter.avg:.3f} Acc@5 {acc5_meter.avg:.3f}'
+        # )
         logger.info(
-            f'[Epoch:{epoch}] * Acc@1 {acc1_meter.avg:.3f} Acc@5 {acc5_meter.avg:.3f}'
+            f'[Epoch:{epoch}] * Acc@1 {acc1_meter.avg:.3f}'
         )
+        wandb.log({"val acc": acc1_meter.avg})
     else:
         logger.info(
-            f' * Acc@1 {acc1_meter.avg:.3f} Acc@5 {acc5_meter.avg:.3f}')
+            f' * Acc@1 {acc1_meter.avg:.3f}')
 
-    return acc1_meter.avg, acc5_meter.avg, loss_meter.avg
+    # return acc1_meter.avg, acc5_meter.avg, loss_meter.avg
+    return acc1_meter.avg, loss_meter.avg
 
 
 if __name__ == '__main__':

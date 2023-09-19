@@ -514,11 +514,16 @@ class ETTDataset(CustomDataset):
                 max_score = self._get_max_pred_bbox(pred_files)
                 max_score = list(max_score.values())
                 pred_labels = self._get_labels(max_score, thres=0)
-                gt_labels = pd.read_csv("labels/gt_labels_Austral.csv")
+                gt_labels = pd.read_csv("labels/gt_labels_Newark_Beth_Israel_Medical_Center.csv")
 
-                # encode={"carina": 0, "tip": 1}
-                encode={"carina": 3046, "tip": 3047}
-                pixel_spacing_file = "/home/cat302/ETT-Project/ETT_Evaluation/pixel_spacing_10_hospitals.csv"
+                hospital = True
+                encode={"carina": 0, "tip": 1}
+                pixel_spacing_file = "/home/cat302/ETT-Project/ETT_Evaluation/pixel_spacing.csv"
+
+                if hospital:
+                    encode={"carina": 3046, "tip": 3047}
+                    pixel_spacing_file = "/home/cat302/ETT-Project/ETT_Evaluation/pixel_spacing_10_hospitals_cleaned.csv"
+
                 metric = UpdatedMetric(
                     gt_labels = gt_labels.copy(),
                     pred_labels = pred_labels.copy(),

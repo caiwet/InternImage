@@ -6,6 +6,7 @@ class UpdatedMetric:
     def __init__(self, gt_labels, pred_labels, pixel_spacing_file, resized_dim, encode={"carina": 0, "tip": 1}):
         self.encode = encode
         self.pixel_spacing = pd.read_csv(pixel_spacing_file)
+        self.pixel_spacing['image_id'] = self.pixel_spacing['image_id'].astype('int')
         self.gt_labels = gt_labels
         self.pred_labels = pred_labels
         self.resized_dim = resized_dim
@@ -53,11 +54,10 @@ class UpdatedMetric:
         # return 0.03 # test for hospitals
 
         # Get data for image id
+        self.pixel_spacing = self.pixel_spacing.astype({'image_id': 'int'})
         tmp = self.pixel_spacing[self.pixel_spacing['image_id']==img_id]
-        breakpoint()
         if len(tmp) == 0:
             print(img_id)
-            breakpoint()
             return 2500*0.139*0.1/self.resized_dim # a random default value
 #             raise ValueError("Image id not found in pixel spacing file")
 
