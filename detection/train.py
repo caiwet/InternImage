@@ -113,7 +113,7 @@ def parse_args():
 
 
 def main():
-    wandb.init(project='all-data-cls-pretrained', group='0919')
+    wandb.init(project='pretrained-no-ett', group='train-3')
     args = parse_args()
 
     default_cfg = Config.fromfile(args.config)

@@ -10,3 +10,6 @@ detection/mmdet_custom/work_dirs*/
 detection/mmdet_custom/models/backbones/cxrlearn_copy.zip
 *.pth
 *.png
+*.err
+*.out
+*.log*

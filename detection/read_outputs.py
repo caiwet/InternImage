@@ -27,13 +27,14 @@ def get_gt_label(gt_annotation, out_file):
     # print(len(gt_df["image_id"].unique()))
     gt_df.to_csv(out_file, index=False)
 
-def generate_hospital_labels():
-    root = "/n/data1/hms/dbmi/rajpurkar/lab/ett/hospital_downsized"
+def generate_hospital_labels(root):
+    
 
     for hospital in os.listdir(root):
         if hospital not in ["images", "annotations"]:
             get_gt_label(gt_annotation=os.path.join(root, hospital, "annotations/annotations.json"),
                          out_file=f"labels/gt_labels_{hospital}.csv")
+            # get_pred_labels(f"metric_v2_preds/metric_v2_{hospital}.bbox.json", f"labels/pred_labels_{hospital}.csv")
 
 def get_max_pred_bbox(pred_file='test_gloria.bbox.json'):
     with open(pred_file) as f:
@@ -77,16 +78,18 @@ def get_pred_labels(pred_file, outfile):
 
 
 if __name__ == "__main__":
+    hospital = 'Ascension-Seton'
     # Get gt label
-    get_gt_label(
-        gt_annotation="/n/data1/hms/dbmi/rajpurkar/lab/ett/hospital_downsized/Chiang_Mai_University/split/annotations/val_annotations.json",
-        out_file=f"labels/gt_labels_Chiang_Mai_University_val.csv")
-
-    # Get hospital gt label in a bundle
-    # generate_hospital_labels()
+    # get_gt_label(
+    #     gt_annotation=f"/n/data1/hms/dbmi/rajpurkar/lab/MAIDA_ETT/hospital_downsized_new/{hospital}/annotations/annotations.json",
+    #     out_file=f"labels/gt_labels_{hospital}.csv")
 
     # Get pred label
-    # get_pred_labels('gloria_NYU_Langone_Health.bbox.json', "labels/hospitals/NYU_Langone_Health_pred_labels.csv")
+    # get_pred_labels('metric_v2_preds/metric_v2_Ascension-Seton.bbox.json', "labels/hospitals/Ascension-Seton_pred_labels.csv")
     # get_pred_labels('metric_v2.bbox.json', "labels/metric_v2_mimic.csv")
+
+    # Get hospital gt label in a bundle
+    root = "/n/data1/hms/dbmi/rajpurkar/lab/MAIDA_ETT/hospital_downsized_new"
+    generate_hospital_labels(root)
 
 

@@ -50,20 +50,20 @@ class ReadEval():
 
 
 if __name__=="__main__":
-    mimic = False
+    mimic = True
     # hospitals = ["Cedars-Sinai", "Chiang_Mai_University", "Morales_Meseguer_Hospital",
     #              "Newark_Beth_Israel_Medical_Center", "NYU_Langone_Health",
     #              "Osaka_City_University", "Technical_University_of_Munich",
     #              "Universitätsklinikum_Tübingen", "University_of_Miami"]
-    hospitals = ["Newark_Beth_Israel_Medical_Center"]
+    hospitals = ["mimic"]
     resized_dim = 1280
     overall = []
     for hospital_name in hospitals:
         print(hospital_name)
         gt_file = f"labels/gt_labels_{hospital_name}.csv"
         pred_file = f"labels/pred_labels_{hospital_name}.csv"
-        pred_json = f"metric_v2_preds/metric_v2_{hospital_name}_bright.bbox.json"
-
+        # pred_json = f"metric_v2_preds/metric_v2_{hospital_name}_bright.bbox.json"
+        pred_json = "ranzcr-pretrained-test-on-mimic.bbox.json"
 
         pixel_spacing_file = "/home/cat302/ETT-Project/ETT_Evaluation/pixel_spacing_10_hospitals_cleaned.csv"
         encode={"carina": 3046, "tip": 3047}
@@ -83,23 +83,30 @@ if __name__=="__main__":
         overall.append(row)
 
         ### Visualzie good and bad examples
-        # good_dir = f'/n/data1/hms/dbmi/rajpurkar/lab/ett/{hospital_name}_good_examples'
-        # bad_dir = f'/n/data1/hms/dbmi/rajpurkar/lab/ett/{hospital_name}_bad_examples'
-        # good_ids, bad_ids = read_eval.read_eval()
-        # visualization = Visualization(
-        #     gt_anno=f'/n/data1/hms/dbmi/rajpurkar/lab/ett/hospital_downsized/{hospital_name}/annotations/annotations.json',
-        #     pred_anno=pred_json,
-        #     image_dir=f'/n/data1/hms/dbmi/rajpurkar/lab/ett/hospital_downsized/{hospital_name}/images_bright'
-        # )
-        # visualization.show_images(
-        #     good_ids, category_id=3047,
-        #     save_dir=good_dir
-        # )
+        good_dir = f'/n/data1/hms/dbmi/rajpurkar/lab/MAIDA_ETT/{hospital_name}_good_examples'
+        bad_dir = f'/n/data1/hms/dbmi/rajpurkar/lab/MAIDA_ETT/{hospital_name}_bad_examples'
+        good_ids, bad_ids, _ = read_eval.read_eval()
+        if mimic:
+            visualization = Visualization(
+                gt_anno=f'/n/data1/hms/dbmi/rajpurkar/lab/MAIDA_ETT/Test/downsized/MIMIC/annotations/test_annotations_enl5.json',
+                pred_anno=pred_json,
+                image_dir=f'/n/data1/hms/dbmi/rajpurkar/lab/MAIDA_ETT/Test/downsized/MIMIC/images'
+            )
+        else:
+            visualization = Visualization(
+            gt_anno=f'/n/data1/hms/dbmi/rajpurkar/lab/MAIDA_ETT/hospital_downsized/{hospital_name}/annotations/annotations.json',
+            pred_anno=pred_json,
+            image_dir=f'/n/data1/hms/dbmi/rajpurkar/lab/MAIDA_ETT/hospital_downsized/{hospital_name}/images_bright'
+        )
+        visualization.show_images(
+            good_ids, category_id=encode['tip'],
+            save_dir=good_dir
+        )
 
-        # visualization.show_images(
-        #     bad_ids, category_id=3047,
-        #     save_dir=bad_dir
-        # )
+        visualization.show_images(
+            bad_ids, category_id=encode['tip'],
+            save_dir=bad_dir
+        )
 
     overall = pd.DataFrame(overall, columns=['hospital', 'combined',
     'AP_carina', 'AUC_ETT', 'F1_normal_abnormal', 'mean_tip_distance'])

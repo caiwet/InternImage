@@ -1,8 +1,8 @@
-NUM_CLASSES = 3
+NUM_CLASSES = 1
 model = dict(
     type='CascadeRCNN',
     backbone=dict(
-        type='InternImage',
+        type='CustomInternImage',
         core_op='DCNv3',
         channels=64,
         depths=[4, 4, 18, 4],
@@ -14,15 +14,15 @@ model = dict(
         offset_scale=1.0,
         post_norm=False,
         with_cp=False,
-        out_indices=(0, 1, 2, 3),
+        out_indices=(0, 1, 2, 3, 4),
         init_cfg=dict(
             type='Pretrained',
             checkpoint=
-            '/home/cat302/ETT-Project/InternImage/detection/modified_pretrained.pth'
+            'https://huggingface.co/OpenGVLab/InternImage/resolve/main/internimage_t_1k_224.pth'
         )),
     neck=dict(
         type='FPN',
-        in_channels=[64, 128, 256, 512],
+        in_channels=[64, 128, 256, 512, 1024],
         out_channels=256,
         num_outs=5),
     rpn_head=dict(
@@ -57,7 +57,7 @@ model = dict(
                 in_channels=256,
                 fc_out_channels=1024,
                 roi_feat_size=7,
-                num_classes=3,
+                num_classes=1,
                 bbox_coder=dict(
                     type='DeltaXYWHBBoxCoder',
                     target_means=[0.0, 0.0, 0.0, 0.0],
@@ -74,7 +74,7 @@ model = dict(
                 in_channels=256,
                 fc_out_channels=1024,
                 roi_feat_size=7,
-                num_classes=3,
+                num_classes=1,
                 bbox_coder=dict(
                     type='DeltaXYWHBBoxCoder',
                     target_means=[0.0, 0.0, 0.0, 0.0],
@@ -91,7 +91,7 @@ model = dict(
                 in_channels=256,
                 fc_out_channels=1024,
                 roi_feat_size=7,
-                num_classes=3,
+                num_classes=1,
                 bbox_coder=dict(
                     type='DeltaXYWHBBoxCoder',
                     target_means=[0.0, 0.0, 0.0, 0.0],
@@ -187,8 +187,8 @@ model = dict(
             nms=dict(type='nms', iou_threshold=0.5),
             max_per_img=100)))
 dataset_type = 'ETTDataset'
-classes = ('carina', 'tip', 'clavicles')
-data_root = '/n/data1/hms/dbmi/rajpurkar/lab/ett/all_data_split/'
+classes = ('tip', )
+data_root = '/n/data1/hms/dbmi/rajpurkar/lab/MAIDA_ETT/ranzcr_no_ett_all_data/'
 img_norm_cfg = dict(
     mean=[126.55846604, 126.55846604, 126.55846604],
     std=[55.47551373, 55.47551373, 55.47551373],
@@ -231,11 +231,11 @@ data = dict(
     workers_per_gpu=2,
     train=dict(
         type='ETTDataset',
-        classes=('carina', 'tip', 'clavicles'),
+        classes=('tip', ),
         ann_file=
-        '/n/data1/hms/dbmi/rajpurkar/lab/ett/all_data_split/annotations/train_annotations_enl5.json',
+        '/n/data1/hms/dbmi/rajpurkar/lab/MAIDA_ETT/ranzcr_no_ett_all_data/annotations/train_annotations_enl5.json',
         img_prefix=
-        '/n/data1/hms/dbmi/rajpurkar/lab/ett/all_data_split/images/train',
+        '/n/data1/hms/dbmi/rajpurkar/lab/MAIDA_ETT/ranzcr_no_ett_all_data/images/train',
         pipeline=[
             dict(type='LoadImageFromFile'),
             dict(type='LoadAnnotations', with_bbox=True, with_mask=False),
@@ -252,11 +252,11 @@ data = dict(
         ]),
     val=dict(
         type='ETTDataset',
-        classes=('carina', 'tip', 'clavicles'),
+        classes=('tip', ),
         ann_file=
-        '/n/data1/hms/dbmi/rajpurkar/lab/ett/all_data_split/annotations/val_annotations_enl5.json',
+        '/n/data1/hms/dbmi/rajpurkar/lab/MAIDA_ETT/ranzcr_no_ett_all_data/annotations/val_annotations_enl5.json',
         img_prefix=
-        '/n/data1/hms/dbmi/rajpurkar/lab/ett/all_data_split/images/val',
+        '/n/data1/hms/dbmi/rajpurkar/lab/MAIDA_ETT/ranzcr_no_ett_all_data/images/val',
         pipeline=[
             dict(type='LoadImageFromFile'),
             dict(
@@ -278,11 +278,11 @@ data = dict(
         ]),
     test=dict(
         type='ETTDataset',
-        classes=('carina', 'tip', 'clavicles'),
+        classes=('tip', ),
         ann_file=
-        '/n/data1/hms/dbmi/rajpurkar/lab/ett/all_data_split/../hospital_downsized/Newark_Beth_Israel_Medical_Center/annotations/annotations.json',
+        '/n/data1/hms/dbmi/rajpurkar/lab/MAIDA_ETT/ranzcr_no_ett_all_data/../hospital_downsized_new/Universitätsklinikum_Essen/annotations/annotations.json',
         img_prefix=
-        '/n/data1/hms/dbmi/rajpurkar/lab/ett/all_data_split/../hospital_downsized/Newark_Beth_Israel_Medical_Center/images',
+        '/n/data1/hms/dbmi/rajpurkar/lab/MAIDA_ETT/ranzcr_no_ett_all_data/../hospital_downsized_new/Universitätsklinikum_Essen/images',
         pipeline=[
             dict(type='LoadImageFromFile'),
             dict(
@@ -308,10 +308,10 @@ evaluation = dict(
     classwise=True,
     save_best='auto',
     interval=1,
-    dynamic_intervals=[(17, 1)])
+    dynamic_intervals=[(19, 1)])
 optimizer = dict(
     type='AdamW',
-    weight_decay=0.02,
+    weight_decay=0.5,
     lr=0.0001,
     constructor='CustomLayerDecayOptimizerConstructor',
     paramwise_cfg=dict(
@@ -333,9 +333,9 @@ log_level = 'INFO'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]
-pretrained = '/home/cat302/ETT-Project/InternImage/detection/modified_pretrained.pth'
+pretrained = 'https://huggingface.co/OpenGVLab/InternImage/resolve/main/internimage_t_1k_224.pth'
 max_epochs = 20
-num_last_epochs = 3
+num_last_epochs = 1
 work_dir = './temp'
 auto_resume = False
 gpu_ids = [0]

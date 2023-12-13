@@ -412,7 +412,7 @@ class ParserCephImage(Parser):
         for index in trange(len(self.samples)):
             if index % self.local_size != self.local_rank:
                 continue
-            path, _ = self.samples[index].split(' ')
+            path, _ = self.samples[index].split(',')
             path = osp.join(self.root, path)
             img_bytes = self.file_client.get(path)
             self.holder[path] = img_bytes
@@ -440,7 +440,7 @@ class ParserCephImage(Parser):
         for index in tqdm(indices):
             if index % self.local_size != self.local_rank:
                 continue
-            path, _ = self.samples[index].split(' ')
+            path, _ = self.samples[index].split(',')
             path = osp.join(self.root, path)
             img_bytes = self.file_client.get(path)
 
@@ -452,7 +452,7 @@ class ParserCephImage(Parser):
         if self.file_client is None:
             self.file_client = FileClient(self.io_backend, **self.kwargs)
 
-        filepath, target = self.samples[index].split(' ')
+        filepath, target = self.samples[index].split(',')
         filepath = osp.join(self.root, filepath)
 
         try:
@@ -488,7 +488,7 @@ class ParserCephImage(Parser):
         return len(self.samples)
 
     def _filename(self, index, basename=False, absolute=False):
-        filename, _ = self.samples[index].split(' ')
+        filename, _ = self.samples[index].split(',')
         filename = osp.join(self.root, filename)
 
         return filename

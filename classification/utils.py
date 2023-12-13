@@ -46,12 +46,12 @@ def load_ema_checkpoint(config, model_ema, logger):
             'Failed to find state_dict_ema, starting from loaded model weights'
         )
 
-    max_accuracy_ema = 0
-    if 'max_accuracy_ema' in checkpoint:
-        max_accuracy_ema = checkpoint['max_accuracy_ema']
+    max_auc_ema = 0
+    if 'max_auc_ema' in checkpoint:
+        max_auc_ema = checkpoint['max_auc_ema']
     if 'ema_decay' in checkpoint:
         model_ema.decay = checkpoint['ema_decay']
-    return max_accuracy_ema
+    return max_auc_ema
 
 
 def load_checkpoint(config, model, optimizer, lr_scheduler, scaler, logger):
@@ -68,7 +68,7 @@ def load_checkpoint(config, model, optimizer, lr_scheduler, scaler, logger):
     print('resuming model')
     msg = model.load_state_dict(checkpoint['model'], strict=False)
     logger.info(msg)
-    max_accuracy = 0.0
+    max_auc = 0.0
     if not config.EVAL_MODE and 'optimizer' in checkpoint and 'lr_scheduler' in checkpoint and 'epoch' in checkpoint:
         if optimizer is not None:
             print('resuming optimizer')
@@ -88,13 +88,13 @@ def load_checkpoint(config, model, optimizer, lr_scheduler, scaler, logger):
         logger.info(
             f"=> loaded successfully {config.MODEL.RESUME} (epoch {checkpoint['epoch']})"
         )
-        if 'max_accuracy' in checkpoint:
-            max_accuracy = checkpoint['max_accuracy']
+        if 'max_auc' in checkpoint:
+            max_auc = checkpoint['max_auc']
 
     del checkpoint
     torch.cuda.empty_cache()
 
-    return max_accuracy
+    return max_auc
 
 
 def load_pretrained(config, model, logger):
@@ -275,16 +275,16 @@ def convert_22k_head_to_1k(model, logger):
 def save_checkpoint(config,
                     epoch,
                     model,
-                    max_accuracy,
+                    max_auc,
                     optimizer,
                     lr_scheduler,
                     scaler,
                     logger,
                     model_ema=None,
-                    max_accuracy_ema=None,
+                    max_auc_ema=None,
                     ema_decay=None,
                     model_ems=None,
-                    max_accuracy_ems=None,
+                    max_auc_ems=None,
                     ems_model_num=None,
                     best=None):
 
@@ -292,20 +292,20 @@ def save_checkpoint(config,
         'model': model.state_dict(),
         'optimizer': optimizer.state_dict(),
         'lr_scheduler': lr_scheduler.state_dict(),
-        'max_accuracy': max_accuracy,
+        'max_auc': max_auc,
         'epoch': epoch,
         'config': config
     }
     if model_ema is not None:
         save_state['model_ema'] = get_state_dict(model_ema)
-    if max_accuracy_ema is not None:
-        save_state['max_accuracy_ema'] = max_accuracy_ema
+    if max_auc_ema is not None:
+        save_state['max_auc_ema'] = max_auc_ema
     if ema_decay is not None:
         save_state['ema_decay'] = ema_decay
     if model_ems is not None:
         save_state['model_ems'] = get_state_dict(model_ems)
-    if max_accuracy_ems is not None:
-        save_state['max_accuracy_ems'] = max_accuracy_ems
+    if max_auc_ems is not None:
+        save_state['max_auc_ems'] = max_auc_ems
     if ems_model_num is not None:
         save_state['ems_model_num'] = ems_model_num
     if config.AMP_OPT_LEVEL != 'O0':

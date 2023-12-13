@@ -34,6 +34,8 @@ from contextlib import suppress
 from ddp_hooks import fp16_compress_hook
 import wandb
 wandb.login()
+from sklearn.metrics import roc_auc_score, confusion_matrix
+from scipy.special import softmax
 
 try:
     from apex import amp
@@ -248,10 +250,10 @@ def main(config):
         criterion = LabelSmoothingCrossEntropy(
             smoothing=config.MODEL.LABEL_SMOOTHING)
     else:
-        criterion = torch.nn.CrossEntropyLoss()
+        criterion = torch.nn.CrossEntropyLoss(weight=torch.tensor(config.MODEL.CLASS_WEIGHT).cuda())
 
-    max_accuracy = 0.0
-    max_ema_accuracy = 0.0
+    max_auc = 0.0
+    max_ema_auc = 0.0
     # set auto resume
     if config.MODEL.RESUME == '' and config.TRAIN.AUTO_RESUME:
         resume_file = auto_resume_helper(config.OUTPUT)
@@ -271,21 +273,27 @@ def main(config):
 
     # set resume and pretrain
     if config.MODEL.RESUME:
-        max_accuracy = load_checkpoint(config, model_without_ddp, optimizer,
+        max_auc = load_checkpoint(config, model_without_ddp, optimizer,
                                        lr_scheduler, loss_scaler, logger)
         if data_loader_val is not None:
             # acc1, acc5, loss = validate(config, data_loader_val, model)
-            acc1, loss = validate(config, data_loader_val, model)
+            acc1, loss, auc = validate(config, data_loader_val, model)
             logger.info(
                 f"Accuracy of the network on the {len(dataset_val)} test images: {acc1:.1f}%"
+            )
+            logger.info(
+                f"AUC of the network on the {len(dataset_val)} test images: {auc:.3f}"
             )
     elif config.MODEL.PRETRAINED:
         load_pretrained(config, model_without_ddp, logger)
         if data_loader_val is not None:
             # acc1, acc5, loss = validate(config, data_loader_val, model)
-            acc1, loss = validate(config, data_loader_val, model)
+            acc1, loss, auc = validate(config, data_loader_val, model)
             logger.info(
                 f"Accuracy of the network on the {len(dataset_val)} test images: {acc1:.1f}%"
+            )
+            logger.info(
+                f"AUC of the network on the {len(dataset_val)} test images: {auc:.3f}"
             )
 
     # evaluate EMA
@@ -297,9 +305,12 @@ def main(config):
         if config.MODEL.RESUME:
             load_ema_checkpoint(config, model_ema, logger)
             # acc1, acc5, loss = validate(config, data_loader_val, model_ema.ema)
-            acc1, loss = validate(config, data_loader_val, model_ema.ema)
+            acc1, loss, auc = validate(config, data_loader_val, model_ema.ema)
             logger.info(
                 f"Accuracy of the ema network on the {len(dataset_val)} test images: {acc1:.1f}%"
+            )
+            logger.info(
+                f"AUC of the ema network on the {len(dataset_val)} test images: {auc:.3f}"
             )
 
     if config.THROUGHPUT_MODE:
@@ -309,7 +320,7 @@ def main(config):
         return
 
     # train
-    wandb.init(project='InternImage-classification', group='0919')
+    wandb.init(project='InternImage-classification-ranzcr', group='group07')
     logger.info("Start training")
     start_time = time.time()
     for epoch in range(config.TRAIN.START_EPOCH, config.TRAIN.EPOCHS):
@@ -326,6 +337,8 @@ def main(config):
                         amp_autocast,
                         loss_scaler,
                         model_ema=model_ema)
+        train_acc, train_loss, train_auc = validate(config, data_loader_train,model, epoch)
+        wandb.log({"train accuracy": train_acc, "train AUC": train_auc})
         if (epoch % config.SAVE_FREQ == 0 or epoch == (config.TRAIN.EPOCHS - 1)) and \
                 config.TRAIN.OPTIMIZER.USE_ZERO:
             optimizer.consolidate_state_dict(to=0)
@@ -334,7 +347,7 @@ def main(config):
             save_checkpoint(config,
                             epoch,
                             model_without_ddp,
-                            max_accuracy,
+                            max_auc,
                             optimizer,
                             lr_scheduler,
                             loss_scaler,
@@ -342,48 +355,56 @@ def main(config):
                             model_ema=model_ema)
         if data_loader_val is not None and epoch % config.EVAL_FREQ == 0:
             # acc1, acc5, loss = validate(config, data_loader_val, model, epoch)
-            acc1, loss = validate(config, data_loader_val, model, epoch)
+            acc1, loss, auc = validate(config, data_loader_val, model, epoch)
             logger.info(
                 f"Accuracy of the network on the {len(dataset_val)} test images: {acc1:.1f}%"
             )
-            wandb.log({"acc": acc1, "loss": loss})
-            if dist.get_rank() == 0 and acc1 > max_accuracy:
+            logger.info(
+                f"AUC of the network on the {len(dataset_val)} test images: {auc:.3f}"
+            )
+            wandb.log({"val acc": acc1, "val loss": loss, "val auc": auc})
+            # if dist.get_rank() == 0 and acc1 > max_accuracy:
+            if dist.get_rank() == 0 and auc > max_auc:
                 save_checkpoint(config,
                                 epoch,
                                 model_without_ddp,
-                                max_accuracy,
+                                max_auc,
                                 optimizer,
                                 lr_scheduler,
                                 loss_scaler,
                                 logger,
                                 model_ema=model_ema,
                                 best='best')
-            max_accuracy = max(max_accuracy, acc1)
-            logger.info(f'Max accuracy: {max_accuracy:.2f}%')
+            max_auc = max(max_auc, auc)
+            logger.info(f'Max auc: {max_auc:.2f}')
+            wandb.log({"max val acc": max_auc})
 
             if config.TRAIN.EMA.ENABLE:
                 # acc1, acc5, loss = validate(config, data_loader_val,
                 #                             model_ema.ema, epoch)
-                acc1, loss = validate(config, data_loader_val,
+                acc1, loss, auc = validate(config, data_loader_val,
                                             model_ema.ema, epoch)
                 logger.info(
                     f"Accuracy of the ema network on the {len(dataset_val)} test images: {acc1:.1f}%"
                 )
-                wandb.log({"ema acc": acc1, "ema loss": loss})
-                if dist.get_rank() == 0 and acc1 > max_ema_accuracy:
+                logger.info(
+                    f"AUC of the ema network on the {len(dataset_val)} test images: {auc:.3f}"
+                )
+                wandb.log({"val ema acc": acc1, "val ema loss": loss, "val ema auc": auc})
+                if dist.get_rank() == 0 and auc > max_ema_auc:
                     save_checkpoint(config,
                                     epoch,
                                     model_without_ddp,
-                                    max_accuracy,
+                                    max_auc,
                                     optimizer,
                                     lr_scheduler,
                                     loss_scaler,
                                     logger,
                                     model_ema=model_ema,
                                     best='ema_best')
-                max_ema_accuracy = max(max_ema_accuracy, acc1)
-                logger.info(f'Max ema accuracy: {max_ema_accuracy:.2f}%')
-                wandb.log({"Max ema accuracy": max_ema_accuracy})
+                max_ema_auc = max(max_ema_auc, auc)
+                logger.info(f'Max ema auc: {max_ema_auc:.3f}')
+                wandb.log({"Max ema auc": max_ema_auc})
 
     total_time = time.time() - start_time
     total_time_str = str(datetime.timedelta(seconds=int(total_time)))
@@ -527,6 +548,8 @@ def train_one_epoch(config,
     logger.info(
         f"EPOCH {epoch} training takes {datetime.timedelta(seconds=int(epoch_time))}"
     )
+    wandb.log({"train epoch": epoch, "train loss_meter_val": loss_meter.val, 
+               "train loss_meter_avg": loss_meter.avg, })
 
 
 @torch.no_grad()
@@ -540,6 +563,8 @@ def validate(config, data_loader, model, epoch=None):
     # acc5_meter = AverageMeter()
 
     end = time.time()
+    output_list = []
+    target_list = []
     for idx, (images, target) in enumerate(data_loader):
         images = images.cuda(non_blocking=True)
         target = target.cuda(non_blocking=True)
@@ -564,7 +589,9 @@ def validate(config, data_loader, model, epoch=None):
         loss_meter.update(loss.item(), target.size(0))
         acc1_meter.update(acc1.item(), target.size(0))
         # acc5_meter.update(acc5.item(), target.size(0))
-
+        output_prob = softmax(output.cpu(), axis=1)
+        output_list.extend(output_prob.tolist())
+        target_list.extend(target.cpu().tolist())
         # measure elapsed time
         batch_time.update(time.time() - end)
         end = time.time()
@@ -584,13 +611,15 @@ def validate(config, data_loader, model, epoch=None):
         logger.info(
             f'[Epoch:{epoch}] * Acc@1 {acc1_meter.avg:.3f}'
         )
-        wandb.log({"val acc": acc1_meter.avg})
     else:
         logger.info(
             f' * Acc@1 {acc1_meter.avg:.3f}')
 
     # return acc1_meter.avg, acc5_meter.avg, loss_meter.avg
-    return acc1_meter.avg, loss_meter.avg
+    
+    auc = roc_auc_score(target_list, output_list, multi_class='ovr', average='weighted')
+    print(confusion_matrix(target_list, np.argmax(output_list, axis=1)))
+    return acc1_meter.avg, loss_meter.avg, auc
 
 
 if __name__ == '__main__':
@@ -598,7 +627,7 @@ if __name__ == '__main__':
 
     if config.AMP_OPT_LEVEL != "O0":
         assert has_native_amp, "Please update pytorch(1.6+) to support amp!"
-
+    print("line 628")
     # init distributed env
     if 'SLURM_PROCID' in os.environ and int(os.environ['SLURM_NNODES']) != 1:
         print("\nDist init: SLURM")

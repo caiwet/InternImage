@@ -27,7 +27,7 @@ import json
 class ETTDataset(CustomDataset):
 
     CLASSES = ('carina', 'tip', 'clavicle')
-    # CLASSES = ('carina', 'tip', 'left clavicle', 'right clavicle')
+    # CLASSES = ('tip',)
 
     def load_annotations(self, ann_file):
         """Load annotation from COCO style annotation file.
@@ -514,9 +514,9 @@ class ETTDataset(CustomDataset):
                 max_score = self._get_max_pred_bbox(pred_files)
                 max_score = list(max_score.values())
                 pred_labels = self._get_labels(max_score, thres=0)
-                gt_labels = pd.read_csv("labels/gt_labels_Newark_Beth_Israel_Medical_Center.csv")
+                gt_labels = pd.read_csv("labels/gt_labels_all_data_val.csv")
 
-                hospital = True
+                hospital = False
                 encode={"carina": 0, "tip": 1}
                 pixel_spacing_file = "/home/cat302/ETT-Project/ETT_Evaluation/pixel_spacing.csv"
 

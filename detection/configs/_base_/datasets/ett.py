@@ -1,8 +1,10 @@
 # dataset settings
 dataset_type = 'ETTDataset'
 classes = ('carina', 'tip', 'clavicles')
+# classes = ('tip',)
 
-data_root = '/n/data1/hms/dbmi/rajpurkar/lab/ett/all_data_split/'
+
+data_root = '/n/data1/hms/dbmi/rajpurkar/lab/MAIDA_ETT/all_data_split/'
 img_norm_cfg = dict(
     ### All Data
     mean = [126.55846604, 126.55846604, 126.55846604],
@@ -64,8 +66,8 @@ data = dict(
         # img_prefix=data_root + '../Test/downsized/RANZCR/images',
         # ann_file=data_root + '../Test/downsized/MIMIC/annotations/test_annotations_enl5.json',
         # img_prefix=data_root + '../Test/downsized/MIMIC/images',
-        ann_file=data_root + '../hospital_downsized/Newark_Beth_Israel_Medical_Center/annotations/annotations.json',
-        img_prefix=data_root + '../hospital_downsized/Newark_Beth_Israel_Medical_Center/images',
+        ann_file=data_root + '../hospital_downsized_new/Universitätsklinikum_Essen/annotations/annotations.json',
+        img_prefix=data_root + '../hospital_downsized_new/Universitätsklinikum_Essen/images',
         # ann_file=data_root + '../hospital_downsized/Chiang_Mai_University/split/annotations/test_annotations.json',
         # img_prefix=data_root + '../hospital_downsized/Chiang_Mai_University/split/images/test',
         pipeline=test_pipeline))

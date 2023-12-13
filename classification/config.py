@@ -61,7 +61,11 @@ _C.MODEL.DROP_PATH_RATE = 0.1
 # Drop path type
 _C.MODEL.DROP_PATH_TYPE = 'linear'  # linear, uniform
 # Label Smoothing
-_C.MODEL.LABEL_SMOOTHING = 0.1
+_C.MODEL.LABEL_SMOOTHING = 0
+
+abnormal_weight = 1.001
+notube_weight = 1.001
+_C.MODEL.CLASS_WEIGHT = [0.46, 1.90*abnormal_weight, 3.52*notube_weight]
 
 # INTERN_IMAGE parameters
 _C.MODEL.INTERN_IMAGE = CN()
@@ -87,12 +91,12 @@ _C.MODEL.INTERN_IMAGE.CENTER_FEATURE_SCALE = False
 # -----------------------------------------------------------------------------
 _C.TRAIN = CN()
 _C.TRAIN.START_EPOCH = 0
-_C.TRAIN.EPOCHS = 30
-_C.TRAIN.WARMUP_EPOCHS = 2
+_C.TRAIN.EPOCHS = 100
+_C.TRAIN.WARMUP_EPOCHS = 1 #####
 _C.TRAIN.WEIGHT_DECAY = 0.05
-_C.TRAIN.BASE_LR = 5e-5
-_C.TRAIN.WARMUP_LR = 5e-8
-_C.TRAIN.MIN_LR = 5e-7
+_C.TRAIN.BASE_LR =  5e-4   ######
+_C.TRAIN.WARMUP_LR = 5e-10  
+_C.TRAIN.MIN_LR = 5e-12
 # Clip gradient norm
 _C.TRAIN.CLIP_GRAD = 5.0
 # Auto resume from latest checkpoint
@@ -108,9 +112,9 @@ _C.TRAIN.USE_CHECKPOINT = False
 _C.TRAIN.LR_SCHEDULER = CN()
 _C.TRAIN.LR_SCHEDULER.NAME = 'cosine'
 # Epoch interval to decay LR, used in StepLRScheduler
-_C.TRAIN.LR_SCHEDULER.DECAY_EPOCHS = 3
+_C.TRAIN.LR_SCHEDULER.DECAY_EPOCHS = 1
 # LR decay rate, used in StepLRScheduler
-_C.TRAIN.LR_SCHEDULER.DECAY_RATE = 0.1
+_C.TRAIN.LR_SCHEDULER.DECAY_RATE = 0.1  ######
 
 # Optimizer
 _C.TRAIN.OPTIMIZER = CN()
@@ -135,7 +139,7 @@ _C.TRAIN.EMA.DECAY = 0.9998
 
 # LR_LAYER_DECAY
 _C.TRAIN.LR_LAYER_DECAY = False
-_C.TRAIN.LR_LAYER_DECAY_RATIO = 0.875
+_C.TRAIN.LR_LAYER_DECAY_RATIO =  0.9 #####
 
 # FT head init weights
 _C.TRAIN.RAND_INIT_FT_HEAD = False
@@ -155,7 +159,7 @@ _C.AUG.REMODE = 'pixel'
 # Random erase count
 _C.AUG.RECOUNT = 1
 # Mixup alpha, mixup enabled if > 0
-_C.AUG.MIXUP = 0.8
+_C.AUG.MIXUP = 0
 # Cutmix alpha, cutmix enabled if > 0
 _C.AUG.CUTMIX = 1.0
 # Cutmix min/max ratio, overrides alpha and enables cutmix if set
@@ -168,8 +172,8 @@ _C.AUG.MIXUP_SWITCH_PROB = 0.5
 _C.AUG.MIXUP_MODE = 'batch'
 # RandomResizedCrop
 _C.AUG.RANDOM_RESIZED_CROP = False
-_C.AUG.MEAN = (0.485, 0.456, 0.406)
-_C.AUG.STD = (0.229, 0.224, 0.225)
+_C.AUG.MEAN = (0.5, 0.5, 0.5)
+_C.AUG.STD = (0.0008, 0.0008, 0.0008)
 
 # -----------------------------------------------------------------------------
 # Testing settings

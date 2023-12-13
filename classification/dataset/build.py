@@ -181,14 +181,14 @@ def build_dataset(split, config):
             if not config.EVAL_MODE:
                 root = config.DATA.DATA_PATH
                 dataset = ImageCephDataset(root,
-                                           'train',
+                                           'train_labels_ranzcr',
                                            transform=transform,
                                            on_memory=config.DATA.IMG_ON_MEMORY)
-            nb_classes = 2
+            nb_classes = 3
         elif prefix == 'val':
-            root = os.path.join(config.DATA.DATA_PATH, 'val')
-            dataset = ImageCephDataset(root, 'val', transform=transform)
-            nb_classes = 2   #(not used?)
+            root = config.DATA.DATA_PATH
+            dataset = ImageCephDataset(root, 'val_labels_ranzcr', transform=transform)
+            nb_classes = 3   #(not used?)
     else:
         raise NotImplementedError(
             f'build_dataset does support {config.DATA.DATASET}')

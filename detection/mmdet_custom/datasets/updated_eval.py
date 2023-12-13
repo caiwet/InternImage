@@ -57,7 +57,7 @@ class UpdatedMetric:
         self.pixel_spacing = self.pixel_spacing.astype({'image_id': 'int'})
         tmp = self.pixel_spacing[self.pixel_spacing['image_id']==img_id]
         if len(tmp) == 0:
-            print(img_id)
+            print(f"No pixel spacing: {img_id}")
             return 2500*0.139*0.1/self.resized_dim # a random default value
 #             raise ValueError("Image id not found in pixel spacing file")
 
@@ -145,7 +145,7 @@ class UpdatedMetric:
         return gt_dist, pred_dist
 
 
-    def eval_all(self, ett_thres_c=[0.05, 0.1, 0.15], norma_thres=[2, 7]):
+    def eval_all(self,  ett_thres_c=[0.05, 0.1, 0.15], norma_thres=[2, 7]):
         """Evaluate all metrics.
         """
         # Compute metrics for carina
