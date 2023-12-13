@@ -1,4 +1,0 @@
-abnormal/a47262e8-f6091196-8e01bbee-05135ac6-64f49a96.jpg 1
-abnormal/d418bfb8-5aa82e21-45032261-bbad3d64-07433dc7.jpg 1
-normal/06b30503-b3b81e1c-b2c61f86-4f9d0a65-11afbe34.jpg 0
-normal/39572848-27e94e10-52b9b0be-ebe90bfa-30b5b293.jpg 0
